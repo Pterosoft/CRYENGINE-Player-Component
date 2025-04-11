@@ -1,0 +1,10 @@
+^E:\FIRST PERSON C++ TUTORIAL\SOLUTIONS\WIN64\CMAKEFILES\C1D2EFB90AEF289C8B43059E0C07EB5D\GENERATE.STAMP.RULE
+setlocal
+D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\bin\cmake.exe "-SE:/First Person C++ Tutorial/Code" "-BE:/First Person C++ Tutorial/solutions/win64" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "E:/First Person C++ Tutorial/solutions/win64/Game.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\First Person C++ Tutorial\Code\StdAfx.cpp" />
+    <ClCompile Include="E:\First Person C++ Tutorial\solutions\win64\Code_uber.cpp">
+      <Filter>UBER FILES</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\First Person C++ Tutorial\solutions\win64\Components_uber.cpp">
+      <Filter>UBER FILES</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Code\Flowgraph\InputBind.cpp">
+      <Filter>Flowgraph</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="E:\First Person C++ Tutorial\Code\GamePlugin.cpp" />
+    <ClInclude Include="E:\First Person C++ Tutorial\Code\GamePlugin.h" />
+    <ClInclude Include="E:\First Person C++ Tutorial\Code\StdAfx.h" />
+    <ClInclude Include="E:\First Person C++ Tutorial\Code\Components\Player.cpp">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\First Person C++ Tutorial\Code\Components\Player.h">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Code\Flowgraph\InputBind.h">
+      <Filter>Flowgraph</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\First Person C++ Tutorial\Code\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="E:\First Person C++ Tutorial\solutions\win64\Game.autogen.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Components">
+      <UniqueIdentifier>{C3102447-4458-300E-9E63-7C24AC2EC850}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{C018054F-8C72-3DCD-80F3-47164429A691}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UBER FILES">
+      <UniqueIdentifier>{304CAAA4-B2CB-3B85-AFFC-E7C26CA07A90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Flowgraph">
+      <UniqueIdentifier>{07bbf814-8ce8-4390-b98a-4fbaa34615f6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

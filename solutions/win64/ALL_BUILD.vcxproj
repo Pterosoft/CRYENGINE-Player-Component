@@ -1,0 +1,160 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Profile|x64">
+      <Configuration>Profile</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{E8BCB6E4-1CF8-3394-B75C-AAA72AA8BFE1}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>ALL_BUILD</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>E:\First Person C++ Tutorial\Code;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>E:\First Person C++ Tutorial\Code;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>E:\First Person C++ Tutorial\Code;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\First Person C++ Tutorial\Code\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule E:/First Person C++ Tutorial/Code/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\bin\cmake.exe "-SE:/First Person C++ Tutorial/Code" "-BE:/First Person C++ Tutorial/solutions/win64" --check-stamp-file "E:/First Person C++ Tutorial/solutions/win64/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Build.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\CRYENGINE-MSVC.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\CommonMacros.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\CommonOptions.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Configure.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\ConfigureChecks.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\CopyFilesToBin.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\DownloadSDKs.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\InitialSetup.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Recode.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeCInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeCXXInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeCommonLanguageInclude.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeGenericSystem.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeInitializeConfigs.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeLanguageInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeRCInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeSystemSpecificInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeSystemSpecificInitialize.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CheckFunctionExists.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Compiler\MSVC-C.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Compiler\MSVC-CXX.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\Windows-MSVC-C.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\Windows-MSVC-CXX.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\Windows-MSVC.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\Windows.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\WindowsPaths.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\modules\Boost.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\modules\WinPixEventRuntime.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\toolchain\windows\WindowsPC-MSVC.cmake;E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\3.22.1\CMakeCCompiler.cmake;E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\3.22.1\CMakeCXXCompiler.cmake;E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\3.22.1\CMakeRCCompiler.cmake;E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\3.22.1\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">Building Custom Rule E:/First Person C++ Tutorial/Code/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">setlocal
+D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\bin\cmake.exe "-SE:/First Person C++ Tutorial/Code" "-BE:/First Person C++ Tutorial/solutions/win64" --check-stamp-file "E:/First Person C++ Tutorial/solutions/win64/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Build.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\CRYENGINE-MSVC.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\CommonMacros.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\CommonOptions.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Configure.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\ConfigureChecks.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\CopyFilesToBin.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\DownloadSDKs.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\InitialSetup.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Recode.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeCInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeCXXInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeCommonLanguageInclude.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeGenericSystem.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeInitializeConfigs.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeLanguageInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeRCInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeSystemSpecificInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeSystemSpecificInitialize.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CheckFunctionExists.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Compiler\MSVC-C.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Compiler\MSVC-CXX.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\Windows-MSVC-C.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\Windows-MSVC-CXX.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\Windows-MSVC.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\Windows.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\WindowsPaths.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\modules\Boost.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\modules\WinPixEventRuntime.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\toolchain\windows\WindowsPC-MSVC.cmake;E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\3.22.1\CMakeCCompiler.cmake;E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\3.22.1\CMakeCXXCompiler.cmake;E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\3.22.1\CMakeRCCompiler.cmake;E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\3.22.1\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Profile|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule E:/First Person C++ Tutorial/Code/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\bin\cmake.exe "-SE:/First Person C++ Tutorial/Code" "-BE:/First Person C++ Tutorial/solutions/win64" --check-stamp-file "E:/First Person C++ Tutorial/solutions/win64/CMakeFiles/generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Build.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\CRYENGINE-MSVC.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\CommonMacros.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\CommonOptions.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Configure.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\ConfigureChecks.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\CopyFilesToBin.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\DownloadSDKs.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\InitialSetup.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Recode.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeCInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeCXXInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeCommonLanguageInclude.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeGenericSystem.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeInitializeConfigs.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeLanguageInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeRCInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeSystemSpecificInformation.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CMakeSystemSpecificInitialize.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\CheckFunctionExists.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Compiler\CMakeCommonCompilerMacros.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Compiler\MSVC-C.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Compiler\MSVC-CXX.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\Windows-MSVC-C.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\Windows-MSVC-CXX.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\Windows-MSVC.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\Windows.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\Win32\share\cmake-3.22\Modules\Platform\WindowsPaths.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\modules\Boost.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\modules\WinPixEventRuntime.cmake;D:\CryENGINE\Engine\crytek\cryengine-57-lts\5.7.1\Tools\CMake\toolchain\windows\WindowsPC-MSVC.cmake;E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\3.22.1\CMakeCCompiler.cmake;E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\3.22.1\CMakeCXXCompiler.cmake;E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\3.22.1\CMakeRCCompiler.cmake;E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\3.22.1\CMakeSystem.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">E:\First Person C++ Tutorial\solutions\win64\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="E:\First Person C++ Tutorial\solutions\win64\ZERO_CHECK.vcxproj">
+      <Project>{00DF86F8-1B37-388E-B957-5FEA8B7C64CC}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="E:\First Person C++ Tutorial\solutions\win64\Editor.vcxproj">
+      <Project>{1281C34C-BB08-3ABF-9B1B-13D9747DB6B8}</Project>
+      <Name>Editor</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\First Person C++ Tutorial\solutions\win64\Game.vcxproj">
+      <Project>{8FEC3C07-3847-31E9-ABD9-32643BBCBE0D}</Project>
+      <Name>Game</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\First Person C++ Tutorial\solutions\win64\GameLauncher.vcxproj">
+      <Project>{9AA72DF5-EDC3-37F8-9484-1881A87C082A}</Project>
+      <Name>GameLauncher</Name>
+    </ProjectReference>
+    <ProjectReference Include="E:\First Person C++ Tutorial\solutions\win64\GameServer.vcxproj">
+      <Project>{D06982D8-5F98-3714-B2F6-E374EA88A382}</Project>
+      <Name>GameServer</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
