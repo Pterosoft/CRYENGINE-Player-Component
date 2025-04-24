@@ -65,7 +65,8 @@ CPlayerComponent::CPlayerComponent()
 	m_RunSpeed(DEFAULT_SPEED_RUNNING),
 	m_JumpHeight(DEFAULT_JUMP_HEIGHT),
 	m_RotationLimitsMaxPitch(DEFAULT_ROT_LIMIT_PITCH_MAX),
-	m_RotationLimitsMinPitch(DEFAULT_ROT_LIMIT_PITCH_MIN)
+	m_RotationLimitsMinPitch(DEFAULT_ROT_LIMIT_PITCH_MIN),
+	m_bInputEnabled(true) // Initialize input as enabled
 {
 
 }
@@ -194,6 +195,16 @@ void CPlayerComponent::OnFootstepEvent(const char* eventName)
 void CPlayerComponent::Initialize()
 {
 	m_pCameraComponent = m_pEntity->GetOrCreateComponent <Cry::DefaultComponents::CCameraComponent>();
+
+	if (m_pCameraComponent)
+	{
+		CryLogAlways("[CPlayerComponent] Camera Component successfully initialized.");
+	}
+	else
+	{
+		CryLogAlways("[CPlayerComponent] Failed to initialize Camera Component.");
+	}
+
 	m_pInputComponent = m_pEntity->GetOrCreateComponent <Cry::DefaultComponents::CInputComponent>();
 	m_pCharacterControllerComponent = m_pEntity->GetOrCreateComponent <Cry::DefaultComponents::CCharacterControllerComponent>();
 	m_pAdvancedAnimationComponent = m_pEntity->GetOrCreateComponent <Cry::DefaultComponents::CAdvancedAnimationComponent>();
@@ -264,23 +275,29 @@ void CPlayerComponent::Reset()
 
 void CPlayerComponent::InitializeInput()
 {
-	m_pInputComponent->RegisterAction("player", "moveforward", [this](int activationMode, float value) 
+	m_pInputComponent->RegisterAction("player", "moveforward", [this](int activationMode, float value)
 		{
+			if (!m_bInputEnabled) return; // Ignore input if disabled
+
 			m_movementDelta.y = value;
 			if (activationMode == (int)eAAM_OnPress)
 			{
 				m_Walk = 1;
+				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationWalk); // Queue the Walk animation
 			}
 			else if (activationMode == eAAM_OnRelease)
 			{
-				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationIdle);
+				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationIdle); // Queue the Idle animation
 				m_Walk = 0;
 			}
 		});
+
 	m_pInputComponent->BindAction("player", "moveforward", eAID_KeyboardMouse, eKI_W);
 
-	m_pInputComponent->RegisterAction("player", "moveback", [this](int activationMode, float value) 
+	m_pInputComponent->RegisterAction("player", "moveback", [this](int activationMode, float value)
 		{
+			if (!m_bInputEnabled) return; // Ignore input if disabled
+
 			if (activationMode == (int)eAAM_OnPress)
 			{
 				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationBack);
@@ -292,13 +309,15 @@ void CPlayerComponent::InitializeInput()
 				m_Back = 0;
 			}
 
-			m_movementDelta.y = -value; 
+			m_movementDelta.y = -value;
 		});
 	m_pInputComponent->BindAction("player", "moveback", eAID_KeyboardMouse, eKI_S);
 
-	m_pInputComponent->RegisterAction("player", "moveleft", [this](int activationMode, float value) 
+	m_pInputComponent->RegisterAction("player", "moveleft", [this](int activationMode, float value)
 		{
-			m_movementDelta.x = -value; 
+			if (!m_bInputEnabled) return; // Ignore input if disabled
+
+			m_movementDelta.x = -value;
 			if (activationMode == (int)eAAM_OnPress)
 			{
 				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationLeft);
@@ -312,9 +331,11 @@ void CPlayerComponent::InitializeInput()
 		});
 	m_pInputComponent->BindAction("player", "moveleft", eAID_KeyboardMouse, eKI_A);
 
-	m_pInputComponent->RegisterAction("player", "moveright", [this](int activationMode, float value) 
+	m_pInputComponent->RegisterAction("player", "moveright", [this](int activationMode, float value)
 		{
-			m_movementDelta.x = value; 
+			if (!m_bInputEnabled) return; // Ignore input if disabled
+
+			m_movementDelta.x = value;
 			if (activationMode == (int)eAAM_OnPress)
 			{
 				m_pAdvancedAnimationComponent->QueueFragment(Schematyc::CSharedString(m_AnimationRight.c_str()));
@@ -328,14 +349,26 @@ void CPlayerComponent::InitializeInput()
 		});
 	m_pInputComponent->BindAction("player", "moveright", eAID_KeyboardMouse, eKI_D);
 
-	m_pInputComponent->RegisterAction("Player", "yaw", [this](int activationMode, float value) {m_MouseDeltaRotation.y = -value;});
+	m_pInputComponent->RegisterAction("Player", "yaw", [this](int activationMode, float value)
+		{
+			if (!m_bInputEnabled) return; // Ignore input if disabled
+
+			m_MouseDeltaRotation.y = -value;
+		});
 	m_pInputComponent->BindAction("Player", "yaw", eAID_KeyboardMouse, eKI_MouseY);
 
-	m_pInputComponent->RegisterAction("Player", "pitch", [this](int activationMode, float value) {m_MouseDeltaRotation.x = -value;});
+	m_pInputComponent->RegisterAction("Player", "pitch", [this](int activationMode, float value)
+		{
+			if (!m_bInputEnabled) return; // Ignore input if disabled
+
+			m_MouseDeltaRotation.x = -value;
+		});
 	m_pInputComponent->BindAction("Player", "pitch", eAID_KeyboardMouse, eKI_MouseX);
 
-	m_pInputComponent->RegisterAction("player", "sprint", [this](int activationMode, float value) 
+	m_pInputComponent->RegisterAction("player", "sprint", [this](int activationMode, float value)
 		{
+			if (!m_bInputEnabled) return; // Ignore input if disabled
+
 			if (activationMode == (int)eAAM_OnPress)
 			{
 				m_currentPlayerState = EPlayerState::Sprinting;
@@ -350,8 +383,10 @@ void CPlayerComponent::InitializeInput()
 		});
 	m_pInputComponent->BindAction("player", "sprint", eAID_KeyboardMouse, eKI_LShift);
 
-	m_pInputComponent->RegisterAction("player", "jump", [this](int activationMode, float value) 
+	m_pInputComponent->RegisterAction("player", "jump", [this](int activationMode, float value)
 		{
+			if (!m_bInputEnabled) return; // Ignore input if disabled
+
 			if (m_pCharacterControllerComponent->IsOnGround())
 			{
 				m_pCharacterControllerComponent->AddVelocity(Vec3(0, 0, m_JumpHeight));
@@ -362,10 +397,12 @@ void CPlayerComponent::InitializeInput()
 				m_pAdvancedAnimationComponent->QueueFragment(Schematyc::CSharedString(m_AnimationJump.c_str()));
 			}
 		});
-	m_pInputComponent->BindAction("player", "crouch", eAID_KeyboardMouse, eKI_Space);
+	m_pInputComponent->BindAction("player", "jump", eAID_KeyboardMouse, eKI_Space);
 
 	m_pInputComponent->RegisterAction("player", "crouch", [this](int activationMode, float value)
 		{
+			if (!m_bInputEnabled) return; // Ignore input if disabled
+
 			if (activationMode == (int)eAAM_OnPress)
 			{
 				m_desiredPlayerStance = EPlayerStance::Crouching;
@@ -373,25 +410,15 @@ void CPlayerComponent::InitializeInput()
 
 				m_Crouch = 1;
 			}
-			else if (activationMode == eAAM_OnRelease)
+			else if (activationMode == (int)eAAM_OnRelease)
 			{
 				m_desiredPlayerStance = EPlayerStance::Standing;
 				m_Crouch = 0;
 			}
-
-			/*if (m_pCharacterControllerComponent->IsOnGround())
-			{
-				m_pCharacterControllerComponent->AddVelocity(Vec3(0, 0, m_JumpHeight));
-			}
-			if (activationMode == (int)eAAM_OnPress)
-			{
-				m_currentPlayerState = EPlayerState::Jump;
-				m_pAdvancedAnimationComponent->QueueFragment("Jump");
-			} */
 		});
 	m_pInputComponent->BindAction("player", "crouch", eAID_KeyboardMouse, eKI_C);
-
 }
+
 
 Cry::Entity::EventFlags CPlayerComponent::GetEventMask() const
 {
@@ -409,6 +436,7 @@ void CPlayerComponent::ProcessEvent(const SEntityEvent& eventParam)
 	{
 	case Cry::Entity::EEvent::GameplayStarted:
 	{
+		CryLogAlways("[CPlayerComponent] GameplayStarted event received.");
 		Reset();
 	}
 	break;
@@ -420,6 +448,8 @@ void CPlayerComponent::ProcessEvent(const SEntityEvent& eventParam)
 		UpdateMovement();
 		UpdateCamera(frametime);
 		UpdateRotation();
+
+		
 	
 	}
 	break;
@@ -466,6 +496,7 @@ void CPlayerComponent::UpdateCamera(float frametime)
 	finalCamMatrix.SetTranslation(m_CameraOffsetStanding);
 	finalCamMatrix.SetRotation33(Matrix33::CreateRotationX(m_CurrentPitch));
 	m_pCameraComponent->SetTransformMatrix(finalCamMatrix);
+
 }
 
 void CPlayerComponent::TryUpdateStance()
@@ -1353,4 +1384,248 @@ void CFlowNode_TriggerCustomAnimation::GetMemoryUsage(ICrySizer* sizer) const
 
 // Register the FlowGraph node
 REGISTER_FLOW_NODE("Player Component:Play Custom Animation", CFlowNode_TriggerCustomAnimation);
+
+
+
+/*
+	Change Camera FOV Node
+*/
+
+
+
+CFlowNode_ChangeCameraFOV::CFlowNode_ChangeCameraFOV(SActivationInfo* pActInfo)
+	: m_pPlayerComponent(nullptr)
+{
+	if (pActInfo && pActInfo->pEntity)
+	{
+		// Attempt to retrieve the Player Component from the entity
+		m_pPlayerComponent = pActInfo->pEntity->GetComponent<CPlayerComponent>();
+		if (m_pPlayerComponent)
+		{
+			CryLogAlways("[CFlowNode_ChangeCameraFOV] Successfully linked to Player Component.");
+		}
+		else
+		{
+			CryLogAlways("[CFlowNode_ChangeCameraFOV] Failed to retrieve Player Component from entity.");
+		}
+	}
+	else
+	{
+		CryLogAlways("[CFlowNode_ChangeCameraFOV] Activation info or entity is null. [constructor]");
+	}
+}
+
+
+
+
+
+void CFlowNode_ChangeCameraFOV::GetConfiguration(SFlowNodeConfig& config)
+{
+	static const SInputPortConfig inputPorts[] = {
+		InputPortConfig<float>("FOV", 60.0f, _HELP("Field of View value to set")),
+		InputPortConfig_Void("Trigger", _HELP("Trigger to apply the FOV change")),
+		{ 0 }
+	};
+
+	static const SOutputPortConfig outputPorts[] = {
+		OutputPortConfig_Void("OnSuccess", _HELP("Triggered when the FOV is successfully changed")),
+		OutputPortConfig_Void("OnFailure", _HELP("Triggered if the FOV change fails")),
+		{ 0 }
+	};
+
+	config.sDescription = _HELP("FlowGraph node to change the camera's FOV");
+	config.pInputPorts = inputPorts;
+	config.pOutputPorts = outputPorts;
+	config.SetCategory(EFLN_APPROVED);
+}
+
+void CFlowNode_ChangeCameraFOV::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+{
+	if (event == eFE_Activate && IsPortActive(pActInfo, 1)) // Trigger input
+	{
+		// Ensure Activation Info is valid
+		if (!pActInfo)
+		{
+			CryLogAlways("[CFlowNode_ChangeCameraFOV] Activation info is null. [function]");
+			ActivateOutput(pActInfo, 1, true); // OnFailure
+			return;
+		}
+
+		// Ensure the entity is valid
+		if (!pActInfo->pEntity)
+		{
+			CryLogAlways("[CFlowNode_ChangeCameraFOV] pEntity is null in Activation info. Attempting to retrieve dynamically.");
+
+			// Attempt to retrieve the entity dynamically by name
+			IEntity* pEntity = gEnv->pEntitySystem->FindEntityByName("Player");
+			if (pEntity)
+			{
+				CryLogAlways("[CFlowNode_ChangeCameraFOV] Successfully retrieved entity dynamically.");
+				pActInfo->pEntity = pEntity; // Update pEntity in Activation info
+			}
+			else
+			{
+				CryLogAlways("[CFlowNode_ChangeCameraFOV] Failed to retrieve entity dynamically.");
+				ActivateOutput(pActInfo, 1, true); // OnFailure
+				return;
+			}
+		}
+
+		// Ensure the Player Component is valid
+		if (!m_pPlayerComponent)
+		{
+			m_pPlayerComponent = pActInfo->pEntity->GetComponent<CPlayerComponent>();
+			if (!m_pPlayerComponent)
+			{
+				CryLogAlways("[CFlowNode_ChangeCameraFOV] Player Component is null.");
+				ActivateOutput(pActInfo, 1, true); // OnFailure
+				return;
+			}
+		}
+
+		// Ensure the Camera Component is valid
+		if (!m_pPlayerComponent->m_pCameraComponent)
+		{
+			CryLogAlways("[CFlowNode_ChangeCameraFOV] Camera Component is null. [function]");
+			ActivateOutput(pActInfo, 1, true); // OnFailure
+			return;
+		}
+
+		// Retrieve the FOV value from the input port
+		float fov = GetPortFloat(pActInfo, 0);
+		CryLogAlways("[CFlowNode_ChangeCameraFOV] Setting FOV to: %f", fov);
+
+		try
+		{
+			// Set the Field of View directly using the Camera Component
+			m_pPlayerComponent->m_pCameraComponent->SetFieldOfView(CryTransform::CAngle::FromDegrees(fov));
+
+			CryLogAlways("[CFlowNode_ChangeCameraFOV] FOV successfully set to: %f", fov);
+			ActivateOutput(pActInfo, 0, true); // OnSuccess
+		}
+		catch (const std::exception& e)
+		{
+			CryLogAlways("[CFlowNode_ChangeCameraFOV] Exception: %s", e.what());
+			ActivateOutput(pActInfo, 1, true); // OnFailure
+		}
+	}
+}
+
+
+
+void CFlowNode_ChangeCameraFOV::GetMemoryUsage(ICrySizer* sizer) const
+{
+	sizer->AddObject(this, sizeof(*this));
+}
+
+// Register the FlowGraph node
+REGISTER_FLOW_NODE("Player Component:Change Camera FOV", CFlowNode_ChangeCameraFOV);
+
+
+/*
+	Toggle Input Node
+*/
+
+CFlowNode_ToggleInput::CFlowNode_ToggleInput(SActivationInfo* pActInfo)
+	: m_pPlayerComponent(nullptr)
+{
+	if (pActInfo && pActInfo->pEntity)
+	{
+		m_pPlayerComponent = pActInfo->pEntity->GetComponent<CPlayerComponent>();
+		if (m_pPlayerComponent)
+		{
+			CryLogAlways("[CFlowNode_ToggleInput] Successfully retrieved Player Component.");
+		}
+		else
+		{
+			CryLogAlways("[CFlowNode_ToggleInput] Failed to retrieve Player Component from entity.");
+		}
+	}
+}
+
+void CFlowNode_ToggleInput::GetConfiguration(SFlowNodeConfig& config)
+{
+	static const SInputPortConfig inputPorts[] = {
+		InputPortConfig_Void("Enable", _HELP("Enable input for the player")),
+		InputPortConfig_Void("Disable", _HELP("Disable input for the player")),
+		{ 0 }
+	};
+
+	static const SOutputPortConfig outputPorts[] = {
+		OutputPortConfig_Void("OnEnabled", _HELP("Triggered when input is successfully enabled")),
+		OutputPortConfig_Void("OnDisabled", _HELP("Triggered when input is successfully disabled")),
+		OutputPortConfig_Void("OnFailure", _HELP("Triggered if enabling or disabling input fails")),
+		{ 0 }
+	};
+
+	config.sDescription = _HELP("FlowGraph node to enable or disable player input");
+	config.pInputPorts = inputPorts;
+	config.pOutputPorts = outputPorts;
+	config.SetCategory(EFLN_APPROVED);
+}
+
+void CFlowNode_ToggleInput::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
+{
+	if (event == eFE_Activate)
+	{
+		// Check if ActivationInfo or pEntity is null
+		if (!pActInfo || !pActInfo->pEntity)
+		{
+			CryLogAlways("[CFlowNode_ToggleInput] Activation info or entity is null. Attempting to retrieve dynamically.");
+
+			// Attempt to retrieve the entity dynamically by name
+			IEntity* pEntity = gEnv->pEntitySystem->FindEntityByName("Player");
+			if (pEntity)
+			{
+				CryLogAlways("[CFlowNode_ToggleInput] Successfully retrieved entity dynamically.");
+				pActInfo->pEntity = pEntity; // Update pEntity in Activation info
+			}
+			else
+			{
+				CryLogAlways("[CFlowNode_ToggleInput] Failed to retrieve entity dynamically.");
+				ActivateOutput(pActInfo, 2, true); // OnFailure
+				return;
+			}
+		}
+
+		// Check if the Player Component is null
+		if (!m_pPlayerComponent)
+		{
+			CryLogAlways("[CFlowNode_ToggleInput] Player component is null. Attempting to retrieve dynamically.");
+			m_pPlayerComponent = pActInfo->pEntity->GetComponent<CPlayerComponent>();
+			if (!m_pPlayerComponent)
+			{
+				CryLogAlways("[CFlowNode_ToggleInput] Failed to retrieve Player Component dynamically.");
+				ActivateOutput(pActInfo, 2, true); // OnFailure
+				return;
+			}
+		}
+
+		// Handle input enabling or disabling
+		if (IsPortActive(pActInfo, 0)) // Enable input
+		{
+			CryLogAlways("[CFlowNode_ToggleInput] Enabling input.");
+			m_pPlayerComponent->m_bInputEnabled = true;
+			CryLogAlways("[CFlowNode_ToggleInput] Input successfully enabled.");
+			ActivateOutput(pActInfo, 0, true); // OnEnabled
+		}
+		else if (IsPortActive(pActInfo, 1)) // Disable input
+		{
+			CryLogAlways("[CFlowNode_ToggleInput] Disabling input.");
+			m_pPlayerComponent->m_bInputEnabled = false;
+			CryLogAlways("[CFlowNode_ToggleInput] Input successfully disabled.");
+			ActivateOutput(pActInfo, 1, true); // OnDisabled
+		}
+	}
+}
+
+
+
+void CFlowNode_ToggleInput::GetMemoryUsage(ICrySizer* sizer) const
+{
+	sizer->AddObject(this, sizeof(*this));
+}
+
+// Register the FlowGraph node
+REGISTER_FLOW_NODE("Player Component:Toggle Input", CFlowNode_ToggleInput);
 

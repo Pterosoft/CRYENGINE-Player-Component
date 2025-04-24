@@ -59,6 +59,8 @@ class CPlayerComponent final : public IEntityComponent
 {
 public:
 
+	bool m_bInputEnabled; // Flag to track input state
+
 	struct SDefaultScopeSettings
 	{
 		string m_controllerDefinitionPath;
@@ -291,4 +293,32 @@ public:
 
 private:
 	CPlayerComponent* m_pPlayerComponent; // Reference to the player component
+};
+
+
+class CFlowNode_ChangeCameraFOV : public CFlowBaseNode<eNCT_Singleton>
+{
+
+public:
+	CFlowNode_ChangeCameraFOV(SActivationInfo* pActInfo);
+
+	virtual void GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override;
+	virtual void GetMemoryUsage(ICrySizer* sizer) const override;
+
+private:
+	CPlayerComponent* m_pPlayerComponent;
+};
+
+class CFlowNode_ToggleInput : public CFlowBaseNode<eNCT_Singleton>
+{
+public:
+	CFlowNode_ToggleInput(SActivationInfo* pActInfo);
+
+	virtual void GetConfiguration(SFlowNodeConfig& config) override;
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override;
+	virtual void GetMemoryUsage(ICrySizer* sizer) const override;
+
+private:
+	CPlayerComponent* m_pPlayerComponent;
 };
