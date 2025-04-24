@@ -21,7 +21,6 @@
 #include "GamePlugin.h"
 
 
-
 class KeyMapper
 {
 public:
@@ -159,6 +158,8 @@ public:
 		desc.AddMember(&CPlayerComponent::m_AnimationCrouchRight, 'ancr', "animationcrouchright", "Crouch Right Animation", "Set Up the Animation from Mannequin", Schematyc::CSharedString());
 		desc.AddMember(&CPlayerComponent::m_AnimationCrouchWalk, 'ancw', "animationcrouchwalk", "Crouch Walk Animation", "Set Up the Animation from Mannequin", Schematyc::CSharedString());
 		desc.AddMember(&CPlayerComponent::m_AnimationCrouchBack, 'ancb', "animationcrouchback", "Crouch Back Animation", "Set Up the Animation from Mannequin", Schematyc::CSharedString());
+		desc.AddMember(&CPlayerComponent::m_PlayerHealth, 'phl', "playerhealth", "Player Health", "Sets the Player Health", 100.0f); // New health member
+		desc.AddMember(&CPlayerComponent::m_DeathAnimation, 'dan', "deathanimation", "Death Animation", "Set Up the Death Animation from Mannequin", Schematyc::CSharedString());
 	}
 
 	
@@ -174,6 +175,10 @@ protected:
 
 	void TryUpdateStance();
 	bool IsCapsuleIntersectingGeometry(const primitives::capsule& capsule) const;
+
+	void CheckHealth(); // Declaration of CheckHealth
+	// Add this declaration to the CPlayerComponent class in Player.h
+	void ApplyFallDamage(float fallHeight);
 
 public:
 	// Coponent Reference
@@ -214,6 +219,7 @@ public:
 	float m_CapsuleHeightStanding;
 	float m_CapsuleHeightCrouching;
 	float m_CapsuleGroundOffset;
+	float m_PlayerHealth = 100.0f; // Default health set to 100
 	
 	// Animation State
 	float m_Walk = 0;
@@ -243,6 +249,9 @@ public:
 	Schematyc::CSharedString m_AnimationCrouchRight;
 	Schematyc::CSharedString m_AnimationCrouchWalk;
 	Schematyc::CSharedString m_AnimationCrouchBack;
+	Schematyc::CSharedString m_DeathAnimation;
+
+	float m_footstepTimer = 0.0f; // Timer to control footstep frequency
 
 	private:
 		// Map to store surface types and their corresponding audio triggers
@@ -251,6 +260,8 @@ public:
 		// Private methods
 		void LoadSurfaceTypes();
 		void OnFootstepEvent(const char* eventName);
+
+		bool m_isLeftFootstep = true; // Tracks whether the last footstep was left
 };
 
 
@@ -273,6 +284,7 @@ public:
 
 private:
 	bool RebindAction(const string& actionName, const string& newKey);
+
 
 	CPlayerComponent* m_pPlayerComponent; // Pointer to the player component
 };

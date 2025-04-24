@@ -79,6 +79,8 @@ CPlayerComponent::CPlayerComponent()
 
 void CPlayerComponent::LoadSurfaceTypes()
 {
+	CryLogAlways("Loading surface types...");
+
 	// Retrieve the assets folder name from the sys_game_folder cvar
 	const ICVar* pGameFolderCVar = gEnv->pConsole->GetCVar("sys_game_folder");
 	if (!pGameFolderCVar)
@@ -112,13 +114,27 @@ void CPlayerComponent::LoadSurfaceTypes()
 		if (surfaceNode->isTag("SurfaceType"))
 		{
 			const char* surfaceName = nullptr;
-			if (surfaceNode->getAttr("name", &surfaceName)) // Ensure the second argument matches the expected type
+			if (surfaceNode->getAttr("name", &surfaceName))
 			{
-				std::string surfaceNameStr = surfaceName; // Ensure surfaceNameStr is a std::string
-				if (surfaceNameStr.find("mat_") == 0) {
+				std::string surfaceNameStr = surfaceName;
+				if (surfaceNameStr.find("mat_") == 0)
+				{
 					surfaceNameStr = surfaceNameStr.substr(4); // Remove "mat_"
 				}
-				m_surfaceTypes[surfaceNameStr] = "pl_footsteps/" + surfaceNameStr;
+
+				// Generate audio triggers with _left and _right suffixes
+				std::string audioTriggerLeft = "pl_footsteps/" + surfaceNameStr + "_left";
+				std::string audioTriggerRight = "pl_footsteps/" + surfaceNameStr + "_right";
+
+				// Store both triggers in the map
+				m_surfaceTypes[surfaceNameStr + "_left"] = audioTriggerLeft;
+				m_surfaceTypes[surfaceNameStr + "_right"] = audioTriggerRight;
+
+				CryLogAlways("Mapped surface type: %s -> %s and %s", surfaceNameStr.c_str(), audioTriggerLeft.c_str(), audioTriggerRight.c_str());
+			}
+			else
+			{
+				CryLogAlways("SurfaceType node is missing the 'name' attribute.");
 			}
 		}
 	}
@@ -130,6 +146,12 @@ void CPlayerComponent::LoadSurfaceTypes()
 
 void CPlayerComponent::OnFootstepEvent(const char* eventName)
 {
+	CryLogAlways("OnFootstepEvent triggered with event: %s", eventName);
+
+	// Determine which foot is stepping from the event name
+	bool isLeftFoot = (strcmp(eventName, "left") == 0);
+	const char* footSuffix = isLeftFoot ? "_left" : "_right";
+
 	// Get the player's position
 	const Vec3 playerPosition = m_pEntity->GetWorldPos();
 
@@ -137,10 +159,9 @@ void CPlayerComponent::OnFootstepEvent(const char* eventName)
 	ray_hit hit;
 	const int rayFlags = rwi_stop_at_pierceable | rwi_colltype_any;
 	if (gEnv->pPhysicalWorld->RayWorldIntersection(
-		playerPosition, Vec3(0, 0, -1) * 1.0f, // Cast a ray downward
+		playerPosition, Vec3(0, 0, -1) * 1.5f, // Cast a ray downward
 		ent_all, rayFlags, &hit, 1))
 	{
-		// Get the surface type from the hit
 		const ISurfaceType* pSurfaceType = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceType(hit.surface_idx);
 		if (!pSurfaceType)
 		{
@@ -149,21 +170,17 @@ void CPlayerComponent::OnFootstepEvent(const char* eventName)
 		}
 
 		const char* surfaceTypeName = pSurfaceType->GetName();
-		std::string surfaceName = surfaceTypeName;
-		if (surfaceName.find("mat_") == 0)
+		CryLogAlways("Surface type detected: %s", surfaceTypeName);
+
+		std::string surfaceBase = surfaceTypeName;
+		if (surfaceBase.find("mat_") == 0)
 		{
-			surfaceName = surfaceName.substr(4); // Remove "mat_"
+			surfaceBase = surfaceBase.substr(4); // Remove "mat_" prefix
 		}
 
-		// Find the corresponding audio trigger
-		auto it = m_surfaceTypes.find(surfaceName);
-		if (it == m_surfaceTypes.end())
-		{
-			CryLogAlways("No audio trigger found for surface type: %s", surfaceName.c_str());
-			return;
-		}
-
-		const std::string& audioTriggerName = it->second;
+		// Construct the audio trigger name
+		std::string audioTriggerName = surfaceBase + footSuffix;
+		CryLogAlways("Constructed audio trigger name: %s", audioTriggerName.c_str());
 
 		// Play the audio trigger
 		if (gEnv->pAudioSystem)
@@ -171,19 +188,36 @@ void CPlayerComponent::OnFootstepEvent(const char* eventName)
 			CryAudio::ControlId audioTriggerId = CryAudio::StringToId(audioTriggerName.c_str());
 			if (audioTriggerId != CryAudio::InvalidControlId)
 			{
+				CryLogAlways("Executing audio trigger: %s", audioTriggerName.c_str());
 				gEnv->pAudioSystem->ExecuteTrigger(audioTriggerId, CryAudio::SRequestUserData::GetEmptyObject());
+				CryLogAlways("Audio trigger executed successfully.");
 			}
 			else
 			{
 				CryLogAlways("Invalid audio trigger: %s", audioTriggerName.c_str());
 			}
 		}
+		else
+		{
+			CryLogAlways("Audio system is not available.");
+		}
 	}
 	else
 	{
 		CryLogAlways("No surface detected below the player.");
+
+		// Play a default footstep sound even if no surface was detected
+		std::string defaultTrigger = "default" + std::string(footSuffix);
+		CryAudio::ControlId defaultTriggerId = CryAudio::StringToId(defaultTrigger.c_str());
+
+		if (defaultTriggerId != CryAudio::InvalidControlId && gEnv->pAudioSystem)
+		{
+			CryLogAlways("Using default audio trigger: %s", defaultTrigger.c_str());
+			gEnv->pAudioSystem->ExecuteTrigger(defaultTriggerId, CryAudio::SRequestUserData::GetEmptyObject());
+		}
 	}
 }
+
 
 
 /*
@@ -238,19 +272,25 @@ void CPlayerComponent::RecenterCollider()
 	}
 
 	const auto& physParams = PCharacterControllerComponent->GetPhysicsParameters();
-	float HeighOffset = physParams.m_height * 0.5f;
+	float heightOffset = physParams.m_height * 0.5f;
 
 	if (physParams.m_bCapsule)
 	{
-		HeighOffset = HeighOffset * 0.5f / physParams.m_radius * 0.5f;
+		heightOffset = physParams.m_height * 0.5f; // Simplify the calculation
 	}
 
-	PCharacterControllerComponent->SetTransformMatrix(Matrix34(IDENTITY, Vec3(0.f, 0.f, 0.005f + HeighOffset)));
+	// Align the capsule with the character's world position
+	Vec3 capsulePosition = m_pEntity->GetWorldPos() + Vec3(0.f, 0.f, heightOffset + m_CapsuleGroundOffset);
+
+	CryLogAlways("[RecenterCollider] Capsule Position: X=%f, Y=%f, Z=%f", capsulePosition.x, capsulePosition.y, capsulePosition.z);
+
+	PCharacterControllerComponent->SetTransformMatrix(Matrix34(IDENTITY, capsulePosition));
 
 	skip = true;
 
 	PCharacterControllerComponent->Physicalize();
 }
+
 
 
 void CPlayerComponent::Reset()
@@ -277,17 +317,18 @@ void CPlayerComponent::InitializeInput()
 {
 	m_pInputComponent->RegisterAction("player", "moveforward", [this](int activationMode, float value)
 		{
-			if (!m_bInputEnabled) return; // Ignore input if disabled
+			if (!m_bInputEnabled) return;
 
 			m_movementDelta.y = value;
 			if (activationMode == (int)eAAM_OnPress)
 			{
 				m_Walk = 1;
-				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationWalk); // Queue the Walk animation
+				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationWalk);
+				OnFootstepEvent("left"); // Trigger left footstep
 			}
 			else if (activationMode == eAAM_OnRelease)
 			{
-				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationIdle); // Queue the Idle animation
+				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationIdle);
 				m_Walk = 0;
 			}
 		});
@@ -296,12 +337,13 @@ void CPlayerComponent::InitializeInput()
 
 	m_pInputComponent->RegisterAction("player", "moveback", [this](int activationMode, float value)
 		{
-			if (!m_bInputEnabled) return; // Ignore input if disabled
+			if (!m_bInputEnabled) return;
 
 			if (activationMode == (int)eAAM_OnPress)
 			{
 				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationBack);
 				m_Back = 1;
+				OnFootstepEvent("right"); // Trigger right footstep
 			}
 			else if (activationMode == eAAM_OnRelease)
 			{
@@ -315,13 +357,14 @@ void CPlayerComponent::InitializeInput()
 
 	m_pInputComponent->RegisterAction("player", "moveleft", [this](int activationMode, float value)
 		{
-			if (!m_bInputEnabled) return; // Ignore input if disabled
+			if (!m_bInputEnabled) return;
 
 			m_movementDelta.x = -value;
 			if (activationMode == (int)eAAM_OnPress)
 			{
 				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationLeft);
 				m_Left = 1;
+				OnFootstepEvent("left"); // Trigger left footstep
 			}
 			else if (activationMode == eAAM_OnRelease)
 			{
@@ -333,13 +376,14 @@ void CPlayerComponent::InitializeInput()
 
 	m_pInputComponent->RegisterAction("player", "moveright", [this](int activationMode, float value)
 		{
-			if (!m_bInputEnabled) return; // Ignore input if disabled
+			if (!m_bInputEnabled) return;
 
 			m_movementDelta.x = value;
 			if (activationMode == (int)eAAM_OnPress)
 			{
-				m_pAdvancedAnimationComponent->QueueFragment(Schematyc::CSharedString(m_AnimationRight.c_str()));
+				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationRight);
 				m_Right = 1;
+				OnFootstepEvent("right"); // Trigger right footstep
 			}
 			else if (activationMode == eAAM_OnRelease)
 			{
@@ -348,6 +392,43 @@ void CPlayerComponent::InitializeInput()
 			}
 		});
 	m_pInputComponent->BindAction("player", "moveright", eAID_KeyboardMouse, eKI_D);
+
+	m_pInputComponent->RegisterAction("player", "sprint", [this](int activationMode, float value)
+		{
+			if (!m_bInputEnabled) return;
+
+			if (activationMode == (int)eAAM_OnPress)
+			{
+				m_currentPlayerState = EPlayerState::Sprinting;
+				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationRun);
+				m_Run = 1;
+				OnFootstepEvent("left"); // Trigger left footstep
+			}
+			else if (activationMode == eAAM_OnRelease)
+			{
+				m_currentPlayerState = EPlayerState::Walking;
+				m_Run = 0;
+			}
+		});
+	m_pInputComponent->BindAction("player", "sprint", eAID_KeyboardMouse, eKI_LShift);
+
+	m_pInputComponent->RegisterAction("player", "crouch", [this](int activationMode, float value)
+		{
+			if (!m_bInputEnabled) return;
+
+			if (activationMode == (int)eAAM_OnPress)
+			{
+				m_desiredPlayerStance = EPlayerStance::Crouching;
+				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationCrouch);
+				m_Crouch = 1;
+			}
+			else if (activationMode == (int)eAAM_OnRelease)
+			{
+				m_desiredPlayerStance = EPlayerStance::Standing;
+				m_Crouch = 0;
+			}
+		});
+	m_pInputComponent->BindAction("player", "crouch", eAID_KeyboardMouse, eKI_C);
 
 	m_pInputComponent->RegisterAction("Player", "yaw", [this](int activationMode, float value)
 		{
@@ -363,60 +444,8 @@ void CPlayerComponent::InitializeInput()
 
 			m_MouseDeltaRotation.x = -value;
 		});
+
 	m_pInputComponent->BindAction("Player", "pitch", eAID_KeyboardMouse, eKI_MouseX);
-
-	m_pInputComponent->RegisterAction("player", "sprint", [this](int activationMode, float value)
-		{
-			if (!m_bInputEnabled) return; // Ignore input if disabled
-
-			if (activationMode == (int)eAAM_OnPress)
-			{
-				m_currentPlayerState = EPlayerState::Sprinting;
-				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationRun);
-				m_Run = 1;
-			}
-			else if (activationMode == eAAM_OnRelease)
-			{
-				m_currentPlayerState = EPlayerState::Walking;
-				m_Run = 0;
-			}
-		});
-	m_pInputComponent->BindAction("player", "sprint", eAID_KeyboardMouse, eKI_LShift);
-
-	m_pInputComponent->RegisterAction("player", "jump", [this](int activationMode, float value)
-		{
-			if (!m_bInputEnabled) return; // Ignore input if disabled
-
-			if (m_pCharacterControllerComponent->IsOnGround())
-			{
-				m_pCharacterControllerComponent->AddVelocity(Vec3(0, 0, m_JumpHeight));
-			}
-			if (activationMode == (int)eAAM_OnPress)
-			{
-				m_currentPlayerState = EPlayerState::Jump;
-				m_pAdvancedAnimationComponent->QueueFragment(Schematyc::CSharedString(m_AnimationJump.c_str()));
-			}
-		});
-	m_pInputComponent->BindAction("player", "jump", eAID_KeyboardMouse, eKI_Space);
-
-	m_pInputComponent->RegisterAction("player", "crouch", [this](int activationMode, float value)
-		{
-			if (!m_bInputEnabled) return; // Ignore input if disabled
-
-			if (activationMode == (int)eAAM_OnPress)
-			{
-				m_desiredPlayerStance = EPlayerStance::Crouching;
-				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationCrouch);
-
-				m_Crouch = 1;
-			}
-			else if (activationMode == (int)eAAM_OnRelease)
-			{
-				m_desiredPlayerStance = EPlayerStance::Standing;
-				m_Crouch = 0;
-			}
-		});
-	m_pInputComponent->BindAction("player", "crouch", eAID_KeyboardMouse, eKI_C);
 }
 
 
@@ -432,6 +461,8 @@ Cry::Entity::EventFlags CPlayerComponent::GetEventMask() const
 
 void CPlayerComponent::ProcessEvent(const SEntityEvent& eventParam)
 {
+	const float footstepInterval = (m_currentPlayerState == EPlayerState::Sprinting) ? 0.3f : 0.5f; // Adjust interval based on speed
+
 	switch (eventParam.event)
 	{
 	case Cry::Entity::EEvent::GameplayStarted:
@@ -449,7 +480,48 @@ void CPlayerComponent::ProcessEvent(const SEntityEvent& eventParam)
 		UpdateCamera(frametime);
 		UpdateRotation();
 
+		// Call CheckHealth during every update
+		CheckHealth();
+
+		// Track fall height and apply fall damage
+		static Vec3 previousPosition = m_pEntity->GetWorldPos(); // Store the previous position
+		Vec3 currentPosition = m_pEntity->GetWorldPos();         // Get the current position
+
+		// Check if the player is falling (negative vertical movement)
+		if (currentPosition.z < previousPosition.z)
+		{
+			float fallHeight = previousPosition.z - currentPosition.z;
+
+			// If the player lands (e.g., on the ground), apply fall damage
+			if (m_pCharacterControllerComponent && m_pCharacterControllerComponent->IsOnGround())
+			{
+				ApplyFallDamage(fallHeight);
+
+				// Reset previousPosition to avoid repeated fall damage
+				previousPosition = currentPosition;
+			}
+		}
+		else
+		{
+			// Update previousPosition only when the player is not falling
+			previousPosition = currentPosition;
+		}
 		
+		// Trigger footstep sounds based on movement
+		if (m_Walk == 1 || m_Run == 1 || m_Left == 1 || m_Right == 1 || m_Back == 1)
+		{
+			m_footstepTimer += frametime;
+			if (m_footstepTimer >= footstepInterval)
+			{
+				OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
+				m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
+				m_footstepTimer = 0.0f; // Reset timer
+			}
+		}
+		else
+		{
+			m_footstepTimer = 0.0f; // Reset timer if the player stops moving
+		}
 	
 	}
 	break;
@@ -469,6 +541,82 @@ void CPlayerComponent::ProcessEvent(const SEntityEvent& eventParam)
 		break;
 	}
 }
+
+// Death Check (are you scared?)
+
+/*
+
+Requiesce in Pace
+
+		|
+		|
+		|
+	----------
+		|
+		|
+		|
+		|
+		|
+		|
+
+Requiesce in Pace
+
+*/
+
+// How about now? Are you scared?
+
+void CPlayerComponent::CheckHealth()
+{
+	if (m_PlayerHealth <= 0.0f)
+	{
+		CryLogAlways("[CPlayerComponent] Player health is zero or lower. Triggering death animation.");
+
+		if (m_pAdvancedAnimationComponent)
+		{
+			m_pAdvancedAnimationComponent->QueueFragment(m_DeathAnimation); // Trigger death animation
+		}
+
+		// Optionally disable input or other gameplay mechanics
+		m_bInputEnabled = false;
+	}
+}
+
+
+// Fall Damage
+void CPlayerComponent::ApplyFallDamage(float fallHeight)
+{
+	// Define the fall height thresholds (in cm) and corresponding damage values
+	constexpr float minFallHeight = 200.0f;  // Minimum height for damage
+	constexpr float maxFallHeight = 2560.0f; // Maximum height for damage
+	constexpr float minDamage = -5.0f;       // Damage at minimum fall height
+	constexpr float maxDamage = -100.0f;     // Damage at maximum fall height
+
+	// If the fall height is below the minimum threshold, no damage is applied
+	if (fallHeight < minFallHeight)
+	{
+		CryLogAlways("[CPlayerComponent] Fall height (%f cm) is below the damage threshold.", fallHeight);
+		return;
+	}
+
+	// Clamp the fall height to the range [minFallHeight, maxFallHeight]
+	float clampedFallHeight = crymath::clamp(fallHeight, minFallHeight, maxFallHeight);
+
+	// Linearly interpolate the damage based on the fall height
+	float damage = minDamage + (maxDamage - minDamage) * ((clampedFallHeight - minFallHeight) / (maxFallHeight - minFallHeight));
+
+	// Apply the damage to the player's health
+	m_PlayerHealth += damage;
+
+	// Ensure health does not drop below zero
+	if (m_PlayerHealth < 0.0f)
+	{
+		m_PlayerHealth = 0.0f;
+	}
+
+	CryLogAlways("[CPlayerComponent] Applied fall damage: %f. New health: %f", damage, m_PlayerHealth);
+
+}
+
 
 void CPlayerComponent::UpdateMovement()
 {
@@ -501,7 +649,7 @@ void CPlayerComponent::UpdateCamera(float frametime)
 
 void CPlayerComponent::TryUpdateStance()
 {
-	if (m_desiredPlayerStance==m_currentPlayerStance)
+	if (m_desiredPlayerStance == m_currentPlayerStance)
 		return;
 
 	IPhysicalEntity* pPhysEnt = m_pEntity->GetPhysicalEntity();
@@ -509,64 +657,53 @@ void CPlayerComponent::TryUpdateStance()
 	if (pPhysEnt == nullptr)
 		return;
 
-	const float radius = m_pCharacterControllerComponent->GetPhysicsParameters().m_radius * 0.5f;
+	const float radius = m_pCharacterControllerComponent->GetPhysicsParameters().m_radius;
 	float height = 0.f;
 	Vec3 camOffset = ZERO;
 
 	switch (m_desiredPlayerStance)
 	{
+	case EPlayerStance::Crouching:
+	{
+		height = m_CapsuleHeightCrouching;
+		camOffset = m_CameraOffsetCrouching;
+	}
+	break;
 
-	/*case Cry::Entity::EEvent::PhysicalTypeChanged:
-		RecenterCollider();
-		break;
+	case EPlayerStance::Standing:
+	{
+		height = m_CapsuleHeightStanding;
+		camOffset = m_CameraOffsetStanding;
 
-	case Cry::Entity::EEvent::Reset:
-		Reset();
-		break;*/
+		primitives::capsule capsule;
+		capsule.axis.Set(0, 0, 1);
+		capsule.center = m_pEntity->GetWorldPos() + Vec3(0, 0, m_CapsuleGroundOffset + radius + height * 0.5f);
+		capsule.r = radius;
+		capsule.hh = height * 0.5f;
 
-		case EPlayerStance::Crouching:
+		CryLogAlways("[TryUpdateStance] Capsule Center: X=%f, Y=%f, Z=%f", capsule.center.x, capsule.center.y, capsule.center.z);
+
+		if (IsCapsuleIntersectingGeometry(capsule))
 		{
-			height = m_CapsuleHeightCrouching;
-			camOffset = m_CameraOffsetCrouching;
-		} break;
-
-		case EPlayerStance::Standing:
-		{
-			height = m_CapsuleHeightStanding;
-			camOffset = m_CameraOffsetStanding;
-
-			primitives::capsule capsule;
-
-			capsule.axis.Set(0, 0, 1);
-
-			capsule.center = m_pEntity->GetWorldPos() + Vec3(0, 0, m_CapsuleGroundOffset + radius + height * 0.5f);
-			capsule.r = radius;
-			capsule.hh = height * 0.5f;
-
-			if (IsCapsuleIntersectingGeometry(capsule))
-			{
-				return;
-			}
-
-		} break;
-
-		
-
-		pe_player_dimensions playerDimensions;
-		pPhysEnt->GetParams(&playerDimensions);
-
-		playerDimensions.heightCollider = m_CapsuleGroundOffset + radius + height * 0.5f;
-
-		playerDimensions.sizeCollider = Vec3(radius, radius, height * 0.5f);
-
-		m_CameraEndOffset = camOffset;
-
-		m_currentPlayerStance = m_desiredPlayerStance;
-
-		pPhysEnt->SetParams(&playerDimensions);
+			return;
+		}
+	}
+	break;
 	}
 
+	pe_player_dimensions playerDimensions;
+	pPhysEnt->GetParams(&playerDimensions);
+
+	playerDimensions.heightCollider = m_CapsuleGroundOffset + radius + height * 0.5f;
+	playerDimensions.sizeCollider = Vec3(radius, radius, height * 0.5f);
+
+	m_CameraEndOffset = camOffset;
+	m_currentPlayerStance = m_desiredPlayerStance;
+
+	pPhysEnt->SetParams(&playerDimensions);
 }
+
+
 
 bool CPlayerComponent::IsCapsuleIntersectingGeometry(const primitives::capsule& capsule) const
 {
@@ -600,6 +737,8 @@ void CPlayerComponent::CheckAnimationState()
 	{
 		CryLogAlways("Run");
 		m_pAdvancedAnimationComponent->QueueFragment(m_AnimationRun);
+		OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
+		m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
 	}
 	else if (m_Crouch == 1)
 	{
@@ -607,21 +746,29 @@ void CPlayerComponent::CheckAnimationState()
 		{
 			CryLogAlways("Crouch Walk Left");
 			m_pAdvancedAnimationComponent->QueueFragment(m_AnimationCrouchLeft);
+			OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
+			m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
 		}
 		else if (m_Walk == 1 && m_Right == 1)
 		{
 			CryLogAlways("Crouch Walk Right");
 			m_pAdvancedAnimationComponent->QueueFragment(m_AnimationCrouchRight);
+			OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
+			m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
 		}
 		else if (m_Back == 1)
 		{
 			CryLogAlways("Crouch Walk Back");
 			m_pAdvancedAnimationComponent->QueueFragment(m_AnimationCrouchBack);
+			OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
+			m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
 		}
 		else if (m_Walk == 1)
 		{
 			CryLogAlways("Crouch Walk");
 			m_pAdvancedAnimationComponent->QueueFragment(m_AnimationCrouchWalk);
+			OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
+			m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
 		}
 		else
 		{
@@ -635,27 +782,37 @@ void CPlayerComponent::CheckAnimationState()
 		{
 			CryLogAlways("Walk Left");
 			m_pAdvancedAnimationComponent->QueueFragment(m_AnimationWalkLeft);
+			OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
+			m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
 		}
 		else if (m_Right == 1)
 		{
 			CryLogAlways("Walk Right");
 			m_pAdvancedAnimationComponent->QueueFragment(m_AnimationWalkRight);
+			OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
+			m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
 		}
 		else if (m_Back == 1)
 		{
 			CryLogAlways("Walk Back");
 			m_pAdvancedAnimationComponent->QueueFragment(m_AnimationBack);
+			OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
+			m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
 		}
 		else
 		{
 			CryLogAlways("Walk");
 			m_pAdvancedAnimationComponent->QueueFragment(m_AnimationWalk);
+			OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
+			m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
 		}
 	}
 	else if (m_Back == 1)
 	{
 		CryLogAlways("Walk Back");
 		m_pAdvancedAnimationComponent->QueueFragment(m_AnimationBack);
+		OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
+		m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
 	}
 	else
 	{
@@ -663,6 +820,7 @@ void CPlayerComponent::CheckAnimationState()
 		m_pAdvancedAnimationComponent->QueueFragment(m_AnimationIdle);
 	}
 }
+
 
 /*
 	---------------
@@ -1235,8 +1393,6 @@ bool CFlowNode_ChangeInputBinding::RebindAction(const string& actionName, const 
 }
 
 
-
-
 REGISTER_FLOW_NODE("Player Component:Change Input Bind", CFlowNode_ChangeInputBinding);
 
 
@@ -1629,3 +1785,200 @@ void CFlowNode_ToggleInput::GetMemoryUsage(ICrySizer* sizer) const
 // Register the FlowGraph node
 REGISTER_FLOW_NODE("Player Component:Toggle Input", CFlowNode_ToggleInput);
 
+
+/*
+	FlowGraph Node: Output Player Health
+*/
+
+class CFlowNode_OutputPlayerHealth : public CFlowBaseNode<eNCT_Instanced>
+{
+public:
+	CFlowNode_OutputPlayerHealth(SActivationInfo* pActInfo)
+		: m_pPlayerComponent(nullptr)
+	{
+		if (pActInfo && pActInfo->pEntity)
+		{
+			m_pPlayerComponent = pActInfo->pEntity->GetComponent<CPlayerComponent>();
+		}
+	}
+
+	virtual ~CFlowNode_OutputPlayerHealth() {}
+
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override
+	{
+		return new CFlowNode_OutputPlayerHealth(pActInfo);
+	}
+
+	virtual void GetConfiguration(SFlowNodeConfig& config) override
+	{
+		static const SInputPortConfig inputPorts[] = {
+			InputPortConfig_Void("GetHealth", _HELP("Trigger to output the player's health")),
+			{ 0 }
+		};
+
+		static const SOutputPortConfig outputPorts[] = {
+			OutputPortConfig<float>("Health", _HELP("The current health of the player")),
+			{ 0 }
+		};
+
+		config.sDescription = _HELP("FlowGraph node to output the player's current health");
+		config.pInputPorts = inputPorts;
+		config.pOutputPorts = outputPorts;
+		config.SetCategory(EFLN_APPROVED);
+	}
+
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override
+	{
+		if (event == eFE_Activate && IsPortActive(pActInfo, 0)) // GetHealth input triggered
+		{
+			if (!pActInfo->pEntity)
+			{
+				CryLogAlways("[CFlowNode_OutputPlayerHealth] Entity is null. Attempting to retrieve dynamically.");
+				IEntity* pEntity = gEnv->pEntitySystem->FindEntityByName("Player");
+				if (pEntity)
+				{
+					pActInfo->pEntity = pEntity;
+				}
+				else
+				{
+					CryLogAlways("[CFlowNode_OutputPlayerHealth] Failed to retrieve entity dynamically.");
+					return;
+				}
+			}
+
+			if (!m_pPlayerComponent)
+			{
+				m_pPlayerComponent = pActInfo->pEntity->GetComponent<CPlayerComponent>();
+				if (!m_pPlayerComponent)
+				{
+					CryLogAlways("[CFlowNode_OutputPlayerHealth] Failed to retrieve Player Component.");
+					return;
+				}
+			}
+
+			float playerHealth = m_pPlayerComponent->m_PlayerHealth;
+			CryLogAlways("[CFlowNode_OutputPlayerHealth] Player health: %f", playerHealth);
+
+			ActivateOutput(pActInfo, 0, playerHealth); // Output the player's health
+		}
+	}
+
+	virtual void GetMemoryUsage(ICrySizer* sizer) const override
+	{
+		sizer->AddObject(this, sizeof(*this));
+	}
+
+private:
+	CPlayerComponent* m_pPlayerComponent;
+};
+
+// Register the FlowGraph node
+REGISTER_FLOW_NODE("Player Component:Get Player Health", CFlowNode_OutputPlayerHealth);
+
+/*
+	FlowGraph Node: Modify Player Health
+*/
+
+class CFlowNode_ModifyPlayerHealth : public CFlowBaseNode<eNCT_Instanced>
+{
+public:
+	CFlowNode_ModifyPlayerHealth(SActivationInfo* pActInfo)
+		: m_pPlayerComponent(nullptr)
+	{
+		if (pActInfo && pActInfo->pEntity)
+		{
+			m_pPlayerComponent = pActInfo->pEntity->GetComponent<CPlayerComponent>();
+		}
+	}
+
+	virtual ~CFlowNode_ModifyPlayerHealth() {}
+
+	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo) override
+	{
+		return new CFlowNode_ModifyPlayerHealth(pActInfo);
+	}
+
+	virtual void GetConfiguration(SFlowNodeConfig& config) override
+	{
+		static const SInputPortConfig inputPorts[] = {
+			InputPortConfig<float>("HealthValue", 0.0f, _HELP("Set the player's health to this value")),
+			InputPortConfig_Void("SetHealth", _HELP("Trigger to set the player's health")),
+			{ 0 }
+		};
+
+		static const SOutputPortConfig outputPorts[] = {
+			OutputPortConfig<float>("NewHealth", _HELP("The player's new health after modification")),
+			OutputPortConfig_Void("OnSuccess", _HELP("Triggered when the health is successfully set")),
+			OutputPortConfig_Void("OnFailure", _HELP("Triggered if setting the health fails")),
+			{ 0 }
+		};
+
+		config.sDescription = _HELP("FlowGraph node to set the player's health directly");
+		config.pInputPorts = inputPorts;
+		config.pOutputPorts = outputPorts;
+		config.SetCategory(EFLN_APPROVED);
+	}
+
+	virtual void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo) override
+	{
+		if (event == eFE_Activate && IsPortActive(pActInfo, 1)) // SetHealth input triggered
+		{
+			if (!pActInfo->pEntity)
+			{
+				CryLogAlways("[CFlowNode_ModifyPlayerHealth] Entity is null. Attempting to retrieve dynamically.");
+				IEntity* pEntity = gEnv->pEntitySystem->FindEntityByName("Player");
+				if (pEntity)
+				{
+					pActInfo->pEntity = pEntity;
+				}
+				else
+				{
+					CryLogAlways("[CFlowNode_ModifyPlayerHealth] Failed to retrieve entity dynamically.");
+					ActivateOutput(pActInfo, 2, true); // OnFailure
+					return;
+				}
+			}
+
+			if (!m_pPlayerComponent)
+			{
+				m_pPlayerComponent = pActInfo->pEntity->GetComponent<CPlayerComponent>();
+				if (!m_pPlayerComponent)
+				{
+					CryLogAlways("[CFlowNode_ModifyPlayerHealth] Failed to retrieve Player Component.");
+					ActivateOutput(pActInfo, 2, true); // OnFailure
+					return;
+				}
+			}
+
+			float healthValue = GetPortFloat(pActInfo, 0);
+			CryLogAlways("[CFlowNode_ModifyPlayerHealth] Setting player health to: %f", healthValue);
+
+			// Set the player's health directly
+			m_pPlayerComponent->m_PlayerHealth = healthValue;
+
+
+			// Clamp health to a minimum of 0
+			if (m_pPlayerComponent->m_PlayerHealth < 0.0f)
+			{
+				m_pPlayerComponent->m_PlayerHealth = 0.0f;
+			}
+
+			CryLogAlways("[CFlowNode_ModifyPlayerHealth] New player health: %f", m_pPlayerComponent->m_PlayerHealth);
+
+			// Output the new health
+			ActivateOutput(pActInfo, 0, m_pPlayerComponent->m_PlayerHealth); // NewHealth
+			ActivateOutput(pActInfo, 1, true); // OnSuccess
+		}
+	}
+
+	virtual void GetMemoryUsage(ICrySizer* sizer) const override
+	{
+		sizer->AddObject(this, sizeof(*this));
+	}
+
+private:
+	CPlayerComponent* m_pPlayerComponent;
+};
+
+// Register the FlowGraph node
+REGISTER_FLOW_NODE("Player Component:Set Player Health", CFlowNode_ModifyPlayerHealth);
