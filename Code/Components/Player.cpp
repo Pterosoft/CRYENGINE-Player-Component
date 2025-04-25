@@ -26,6 +26,15 @@
 #include <Cry3DEngine/IMaterial.h>
 #include <string>
 
+#include <CryEntitySystem/IEntityBasicTypes.h>
+
+#include <IActorSystem.h>
+
+#include <CryAction.h>
+
+// Define the static member
+CCryAction* CCryAction::m_pThis = nullptr;
+
 
 
 namespace
@@ -44,6 +53,7 @@ namespace
 
 CPlayerComponent::CPlayerComponent()
 	:
+	//m_entityId(34), // Initialize entity ID to 0
 	m_pCameraComponent(nullptr),
 	m_pInputComponent(nullptr),
 	m_pCharacterControllerComponent(nullptr),
@@ -70,6 +80,50 @@ CPlayerComponent::CPlayerComponent()
 {
 
 }
+
+void AssignPlayerComponentToLocalPlayerNode()
+{
+	CCryAction* pCryAction = CCryAction::GetCryAction();
+	if (!pCryAction)
+	{
+		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: CCryAction is null. Ensure CCryAction is initialized before calling this function.");
+		return;
+	}
+
+
+	EntityId localPlayerId = pCryAction->GetClientEntityId();
+	if (localPlayerId == 0)
+	{
+		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: Local player entity ID is invalid.");
+		return;
+	}
+
+	// Retrieve the local player's entity
+	if (!gEnv || !gEnv->pEntitySystem)
+	{
+		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: gEnv or pEntitySystem is null.");
+		return;
+	}
+
+	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(localPlayerId);
+	if (!pEntity)
+	{
+		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: Could not retrieve local player entity.");
+		return;
+	}
+
+	// Retrieve the CPlayerComponent from the entity
+	CPlayerComponent* pPlayerComponent = pEntity->GetComponent<CPlayerComponent>();
+	if (!pPlayerComponent)
+	{
+		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: Could not retrieve CPlayerComponent from entity.");
+		return;
+	}
+
+	// Log the successful assignment
+	CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Successfully linked CPlayerComponent with entity ID: %d", pPlayerComponent->GetEntityId());
+}
+
 
 /*
 	-------------------------------------------
@@ -148,9 +202,12 @@ void CPlayerComponent::OnFootstepEvent(const char* eventName)
 {
 	CryLogAlways("OnFootstepEvent triggered with event: %s", eventName);
 
-	// Determine which foot is stepping from the event name
-	bool isLeftFoot = (strcmp(eventName, "left") == 0);
+	// Determine which foot is stepping
+	bool isLeftFoot = m_isLeftFootstep;
 	const char* footSuffix = isLeftFoot ? "_left" : "_right";
+
+	// Toggle the footstep flag for the next step
+	m_isLeftFootstep = !m_isLeftFootstep;
 
 	// Get the player's position
 	const Vec3 playerPosition = m_pEntity->GetWorldPos();
@@ -226,6 +283,7 @@ void CPlayerComponent::OnFootstepEvent(const char* eventName)
 	-------------------------------
 */
 
+
 void CPlayerComponent::Initialize()
 {
 	m_pCameraComponent = m_pEntity->GetOrCreateComponent <Cry::DefaultComponents::CCameraComponent>();
@@ -242,10 +300,10 @@ void CPlayerComponent::Initialize()
 	m_pInputComponent = m_pEntity->GetOrCreateComponent <Cry::DefaultComponents::CInputComponent>();
 	m_pCharacterControllerComponent = m_pEntity->GetOrCreateComponent <Cry::DefaultComponents::CCharacterControllerComponent>();
 	m_pAdvancedAnimationComponent = m_pEntity->GetOrCreateComponent <Cry::DefaultComponents::CAdvancedAnimationComponent>();
-	m_pAdvancedAnimationComponent->SetDefaultScopeContextName("FirstPersonCharacter");
-	m_pAdvancedAnimationComponent->SetMannequinAnimationDatabaseFile("Animations/Mannequin/ADB/FirstPerson.adb");
-	m_pAdvancedAnimationComponent->SetControllerDefinitionFile("Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml");
-	m_pAdvancedAnimationComponent->SetDefaultFragmentName("Idle");
+	//m_pAdvancedAnimationComponent->SetDefaultScopeContextName("FirstPersonCharacter");
+	//m_pAdvancedAnimationComponent->SetMannequinAnimationDatabaseFile("Animations/Mannequin/ADB/FirstPerson.adb");
+	//m_pAdvancedAnimationComponent->SetControllerDefinitionFile("Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml");
+	//m_pAdvancedAnimationComponent->SetDefaultFragmentName("Idle");
 	m_pAdvancedAnimationComponent->LoadFromDisk();
 
 	m_pInputComponent = m_pEntity->GetOrCreateComponent<Cry::DefaultComponents::CInputComponent>();
@@ -253,8 +311,57 @@ void CPlayerComponent::Initialize()
 	// Load surface types
 	LoadSurfaceTypes();
 
+	AssignPlayerComponentToLocalPlayerNode();
+
 	Reset();
+
 }
+
+namespace yasli
+{
+	inline bool YASLI_SERIALIZE_OVERRIDE(Archive& ar, Cry::DefaultComponents::CAdvancedAnimationComponent& value, const char* name, const char* label)
+	{
+		string animationDatabase = value.GetMannequinAnimationDatabaseFile();
+		string controllerDefinition = value.GetControllerDefinitionFile();
+
+		ar(animationDatabase, "AnimationDatabase", "Animation Database");
+		ar(controllerDefinition, "ControllerDefinition", "Controller Definition");
+
+		if (ar.isInput()) // If loading, reapply the values
+		{
+			value.SetMannequinAnimationDatabaseFile(animationDatabase.c_str());
+			value.SetControllerDefinitionFile(controllerDefinition.c_str());
+			value.LoadFromDisk();
+		}
+
+		return true;
+	}
+}
+
+
+void CPlayerComponent::Serialize(Serialization::IArchive& ar)
+{
+	if (m_pAdvancedAnimationComponent)
+	{
+		string animationDatabase = m_pAdvancedAnimationComponent->GetMannequinAnimationDatabaseFile();
+		string controllerDefinition = m_pAdvancedAnimationComponent->GetControllerDefinitionFile();
+
+		CryLogAlways("[Serialize] Before: AnimationDatabase=%s, ControllerDefinition=%s", animationDatabase.c_str(), controllerDefinition.c_str());
+
+		ar(animationDatabase, "AnimationDatabase", "Animation Database");
+		ar(controllerDefinition, "ControllerDefinition", "Controller Definition");
+
+		if (ar.isInput()) // If loading, reapply the values
+		{
+			m_pAdvancedAnimationComponent->SetMannequinAnimationDatabaseFile(animationDatabase.c_str());
+			m_pAdvancedAnimationComponent->SetControllerDefinitionFile(controllerDefinition.c_str());
+			m_pAdvancedAnimationComponent->LoadFromDisk();
+		}
+
+		CryLogAlways("[Serialize] After: AnimationDatabase=%s, ControllerDefinition=%s", animationDatabase.c_str(), controllerDefinition.c_str());
+	}
+}
+
 
 void CPlayerComponent::RecenterCollider()
 {
@@ -311,6 +418,45 @@ void CPlayerComponent::Reset()
 
 	// Reset Camera Lerp
 	m_CameraEndOffset = m_CameraOffsetStanding;
+
+}
+
+
+void CPlayerComponent::HandleCrouchInput()
+{
+	if (!m_pAdvancedAnimationComponent)
+		return;
+
+	// Toggle stance
+	if (m_currentPlayerStance == EPlayerStance::Standing)
+	{
+		m_currentPlayerStance = EPlayerStance::Crouching;
+		m_pAdvancedAnimationComponent->QueueFragment(m_AnimationStandToCrouch);
+	}
+	else if (m_currentPlayerStance == EPlayerStance::Crouching)
+	{
+		m_currentPlayerStance = EPlayerStance::Standing;
+		m_pAdvancedAnimationComponent->QueueFragment(m_AnimationCroucToStand);
+	}
+}
+
+void CPlayerComponent::OnAnimationEvent(const AnimEventInstance& event)
+{
+	if (!m_pAdvancedAnimationComponent)
+		return;
+
+	// Check for animation end events
+	if (strcmp(event.m_EventName, "AnimationEnd") == 0)
+	{
+		if (m_currentPlayerStance == EPlayerStance::Crouching)
+		{
+			m_pAdvancedAnimationComponent->QueueFragment(m_AnimationCrouchIdle);
+		}
+		else if (m_currentPlayerStance == EPlayerStance::Standing)
+		{
+			m_pAdvancedAnimationComponent->QueueFragment(m_AnimationIdle);
+		}
+	}
 }
 
 void CPlayerComponent::InitializeInput()
@@ -421,6 +567,7 @@ void CPlayerComponent::InitializeInput()
 				m_desiredPlayerStance = EPlayerStance::Crouching;
 				m_pAdvancedAnimationComponent->QueueFragment(m_AnimationCrouch);
 				m_Crouch = 1;
+				HandleCrouchInput();
 			}
 			else if (activationMode == (int)eAAM_OnRelease)
 			{
@@ -469,6 +616,8 @@ void CPlayerComponent::ProcessEvent(const SEntityEvent& eventParam)
 	{
 		CryLogAlways("[CPlayerComponent] GameplayStarted event received.");
 		Reset();
+
+
 	}
 	break;
 
@@ -480,6 +629,7 @@ void CPlayerComponent::ProcessEvent(const SEntityEvent& eventParam)
 		UpdateCamera(frametime);
 		UpdateRotation();
 
+
 		// Call CheckHealth during every update
 		CheckHealth();
 
@@ -487,26 +637,38 @@ void CPlayerComponent::ProcessEvent(const SEntityEvent& eventParam)
 		static Vec3 previousPosition = m_pEntity->GetWorldPos(); // Store the previous position
 		Vec3 currentPosition = m_pEntity->GetWorldPos();         // Get the current position
 
-		// Check if the player is falling (negative vertical movement)
+		//CryLogAlways("[CPlayerComponent] Current Position: X=%f, Y=%f, Z=%f", currentPosition.x, currentPosition.y, currentPosition.z);
+		//CryLogAlways("[CPlayerComponent] Previous Position: X=%f, Y=%f, Z=%f", previousPosition.x, previousPosition.y, previousPosition.z);
+
 		if (currentPosition.z < previousPosition.z)
 		{
-			float fallHeight = previousPosition.z - currentPosition.z;
+			float fallHeight = (previousPosition.z - currentPosition.z) * 200.0f; // Convert meters to centimeters
+
+			CryLogAlways("[CPlayerComponent] Fall height detected: %f", fallHeight);
 
 			// If the player lands (e.g., on the ground), apply fall damage
 			if (m_pCharacterControllerComponent && m_pCharacterControllerComponent->IsOnGround())
 			{
+				CryLogAlways("[CPlayerComponent] Player landed on the ground. Applying fall damage.");
 				ApplyFallDamage(fallHeight);
 
 				// Reset previousPosition to avoid repeated fall damage
 				previousPosition = currentPosition;
 			}
+			else
+			{
+				CryLogAlways("[CPlayerComponent] Player is not on the ground.");
+			}
 		}
 		else
 		{
 			// Update previousPosition only when the player is not falling
-			previousPosition = currentPosition;
+			if (m_pCharacterControllerComponent && m_pCharacterControllerComponent->IsOnGround())
+			{
+				previousPosition = currentPosition;
+			}
 		}
-		
+
 		// Trigger footstep sounds based on movement
 		if (m_Walk == 1 || m_Run == 1 || m_Left == 1 || m_Right == 1 || m_Back == 1)
 		{
@@ -522,9 +684,9 @@ void CPlayerComponent::ProcessEvent(const SEntityEvent& eventParam)
 		{
 			m_footstepTimer = 0.0f; // Reset timer if the player stops moving
 		}
-	
 	}
 	break;
+
 
 	case Cry::Entity::EEvent::PhysicalTypeChanged:
 	{
@@ -538,9 +700,12 @@ void CPlayerComponent::ProcessEvent(const SEntityEvent& eventParam)
 	}
 	break;
 
-		break;
+	break;
 	}
 }
+
+// Actor:LocalPlayer
+// NoteID: 34
 
 // Death Check (are you scared?)
 
@@ -591,6 +756,8 @@ void CPlayerComponent::ApplyFallDamage(float fallHeight)
 	constexpr float minDamage = -5.0f;       // Damage at minimum fall height
 	constexpr float maxDamage = -100.0f;     // Damage at maximum fall height
 
+	CryLogAlways("[CPlayerComponent] Applying fall damage. Fall height: %f", fallHeight);
+
 	// If the fall height is below the minimum threshold, no damage is applied
 	if (fallHeight < minFallHeight)
 	{
@@ -604,6 +771,8 @@ void CPlayerComponent::ApplyFallDamage(float fallHeight)
 	// Linearly interpolate the damage based on the fall height
 	float damage = minDamage + (maxDamage - minDamage) * ((clampedFallHeight - minFallHeight) / (maxFallHeight - minFallHeight));
 
+	CryLogAlways("[CPlayerComponent] Calculated damage: %f", damage);
+
 	// Apply the damage to the player's health
 	m_PlayerHealth += damage;
 
@@ -611,10 +780,10 @@ void CPlayerComponent::ApplyFallDamage(float fallHeight)
 	if (m_PlayerHealth < 0.0f)
 	{
 		m_PlayerHealth = 0.0f;
+		CryLogAlways("[CPlayerComponent] Player health clamped to 0.");
 	}
 
-	CryLogAlways("[CPlayerComponent] Applied fall damage: %f. New health: %f", damage, m_PlayerHealth);
-
+	CryLogAlways("[CPlayerComponent] New player health: %f", m_PlayerHealth);
 }
 
 

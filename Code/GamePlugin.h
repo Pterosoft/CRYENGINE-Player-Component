@@ -26,6 +26,9 @@ public:
 	// ISystemEventListener
 	virtual void OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam) override;
 
+	// Custom method to register components
+	void RegisterComponents(); // Add this declaration
+
 	// Note that CGamePlugin is declared as a singleton, so the CreateClassInstance will always return the same pointer
 	static CGamePlugin* GetInstance()
 	{

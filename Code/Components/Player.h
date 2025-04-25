@@ -58,6 +58,7 @@ class CPlayerComponent final : public IEntityComponent
 {
 public:
 
+	void SetEntityId(EntityId id);
 	bool m_bInputEnabled; // Flag to track input state
 
 	struct SDefaultScopeSettings
@@ -101,6 +102,8 @@ private:
 	static constexpr EPlayerState DEFAULT_PLAYER_STATE = EPlayerState::Walking;
 	static constexpr EPlayerStance DEFAULT_PLAYER_STANCE = EPlayerStance::Standing;
 
+	EntityId m_entityId; // Member variable to store the entity ID
+
 	//Cry::DefaultComponents::CInputComponent* m_pInputComponent; // Declare the input component
 
 public:
@@ -108,6 +111,7 @@ public:
 	CPlayerComponent();
 	virtual ~CPlayerComponent() override {};
 
+	void CheckHealth(); // Declaration of CheckHealth
 
 	virtual void Initialize() override;
 	
@@ -125,6 +129,7 @@ public:
 		desc.SetEditorCategory("Player");
 		desc.SetLabel("Player Controller");
 		desc.SetDescription("Creates a player controller");
+
 
 		desc.SetGUID("{63F4C0C6-32AF-4ACB-8FB0-57D45DD14725}"_cry_guid);
 		desc.AddMember(&CPlayerComponent::m_WalkSpeed, 'pws', "playerwalkspeed", "Player Walk Speed", "Sets the Player Walk Speed", DEFAULT_SPEED_WALKING);
@@ -176,7 +181,6 @@ protected:
 	void TryUpdateStance();
 	bool IsCapsuleIntersectingGeometry(const primitives::capsule& capsule) const;
 
-	void CheckHealth(); // Declaration of CheckHealth
 	// Add this declaration to the CPlayerComponent class in Player.h
 	void ApplyFallDamage(float fallHeight);
 
@@ -220,6 +224,11 @@ public:
 	float m_CapsuleHeightCrouching;
 	float m_CapsuleGroundOffset;
 	float m_PlayerHealth = 100.0f; // Default health set to 100
+
+	void HandleCrouchInput();
+	void OnAnimationEvent(const AnimEventInstance& event);
+
+	void Serialize(Serialization::IArchive& archive);
 	
 	// Animation State
 	float m_Walk = 0;
@@ -262,6 +271,9 @@ public:
 		void OnFootstepEvent(const char* eventName);
 
 		bool m_isLeftFootstep = true; // Tracks whether the last footstep was left
+
+		IEntity* m_pActorEntity; // Pointer to the actor entity
+
 };
 
 
