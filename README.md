@@ -9,7 +9,9 @@ The entity name must be Player. If the entity has other name some of the functio
 ## Using the component
 First you need to open the .cryproject file - which is the project file for CRYENGINE. It is usually called Game.cryproject. Search for "plugins": and add following line  
 { "guid": "", "type": "EType::Native", "path": "bin/win_x64/Player.dll" },  
-if you are adding the plugin to the last position - don't use ,. The .dll file is called Player.dll for now but that will change in the future. After you do this add the .dll file to bin/win_x64 folder as used in the plugin reference. Then you can open the editor/sandbox. You can find the entity in Components->Player->Player Controller
+if you are adding the plugin to the last position - don't use ,. The .dll file is called Player.dll for now but that will change in the future. After you do this add the .dll file to bin/win_x64 folder as used in the plugin reference. Then you can open the editor/sandbox. You can find the entity in Components->Player->Player Controller  
+### 0.5 Version Install
+0.5 version and later include custom CryAction dll file. You will have to paste it into the engine directory (ENGINE_LOCATION\crytek\cryengine-57-lts\5.7.1\bin\win_x64 + +win_64_release) or you can edit the Game.cryproject. I recomment making a backup of the original file so you don't have to re-download the engine again. The modified CryAction.dll will asign any component named Player to Actor:LocalPlayer flowgraph node. This has not been tested with GameSDK.
 
 ## Animation Loading
 The animations must be prepared in mannequin editor. Load everything from Animation Database to Default Fragment Name. Set Default Fragment Name to your idle animation and check Animation Driven Motion. In the collumn Physics set Mass(pre-scale) to arround 80 and make sure Weight Type is set to Mass. The value we inserted equals to 80kg.
@@ -42,6 +44,9 @@ Capsule Ground Offset: 0.2
 Camera Pitch Max: -1.1  
 Camera Pitch Min: 1.5  
 
+## Proximity Trigger
+Because the GameSDK proximity trigger was not working with the new player component we had to create our own proximity trigger entity. You can find it in Components->Triggers->Proximity Trigger. In the properties you can change the size of the trigger and you can also add a name of an entity that will be able to use the trigger. This will allow other entities - not just player or AI - to interact with the trigger.
+
 ## Flowgraph Nodes
 In addition to the component editing I added some flowgraph nodes as well so that some of the functionalities can be used during gameplay and are not static. You can find the nodes by opening Flowgraph and then go to Player Component folder.
 
@@ -71,3 +76,6 @@ This node will outputs the player health. By default the player health is 100.
 
 ### Set Player Health
 This will sets the player health. The default value is 100. Changing it to 0 or below will result in player death. The input will be disable and the death animation will play if initialized in the player component. You can set the value higher then 100 but this will effect the fall damage.
+
+### Proximity Trigger
+You can find this node in Triggers->Proximity Trigger. It has one input - that is the entity id. This represents the trigger entity that you have placed in the level. You need to connect it with the node otherwise it will not work. The outputs are EntityEnter and EntityLeave and will be triggered when entity enters or leave the proximity trigger.

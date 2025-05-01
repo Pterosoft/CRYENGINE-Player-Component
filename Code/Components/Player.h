@@ -102,9 +102,7 @@ private:
 	static constexpr EPlayerState DEFAULT_PLAYER_STATE = EPlayerState::Walking;
 	static constexpr EPlayerStance DEFAULT_PLAYER_STANCE = EPlayerStance::Standing;
 
-	EntityId m_entityId; // Member variable to store the entity ID
-
-	//Cry::DefaultComponents::CInputComponent* m_pInputComponent; // Declare the input component
+	
 
 public:
 
@@ -121,6 +119,10 @@ public:
 	virtual void ProcessEvent(const SEntityEvent& event) override;
 
 	float m_movementSpeed;
+
+	// Getter and Setter for Local Player ID
+	void SetLocalPlayerId(EntityId localPlayerId) { m_localPlayerId = localPlayerId; }
+	EntityId GetLocalPlayerId() const { return m_localPlayerId; }
 
 
 	// Reflect type to set a unique identifier for this component
@@ -176,7 +178,6 @@ protected:
 	void UpdateRotation();
 	void UpdateCamera(float frametime);
 	void RecenterCollider();
-	
 
 	void TryUpdateStance();
 	bool IsCapsuleIntersectingGeometry(const primitives::capsule& capsule) const;
@@ -186,6 +187,9 @@ protected:
 
 public:
 	// Coponent Reference
+
+	void SetAIFaction(const string& faction);
+	const string& GetAIFaction() const;
 
 	// Camera
 	Cry::DefaultComponents::CCameraComponent* m_pCameraComponent;
@@ -259,6 +263,7 @@ public:
 	Schematyc::CSharedString m_AnimationCrouchWalk;
 	Schematyc::CSharedString m_AnimationCrouchBack;
 	Schematyc::CSharedString m_DeathAnimation;
+	Schematyc::CSharedString m_AIFaction;
 
 	float m_footstepTimer = 0.0f; // Timer to control footstep frequency
 
@@ -274,6 +279,8 @@ public:
 
 		IEntity* m_pActorEntity; // Pointer to the actor entity
 
+		// Local Player ID associated with the actor entity
+		EntityId m_localPlayerId = 0; // Initialize to 0
 };
 
 

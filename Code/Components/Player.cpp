@@ -53,7 +53,7 @@ namespace
 
 CPlayerComponent::CPlayerComponent()
 	:
-	//m_entityId(34), // Initialize entity ID to 0
+	m_localPlayerId(0), // Initialize local player ID to 0
 	m_pCameraComponent(nullptr),
 	m_pInputComponent(nullptr),
 	m_pCharacterControllerComponent(nullptr),
@@ -78,51 +78,66 @@ CPlayerComponent::CPlayerComponent()
 	m_RotationLimitsMinPitch(DEFAULT_ROT_LIMIT_PITCH_MIN),
 	m_bInputEnabled(true) // Initialize input as enabled
 {
-
+	
 }
+
 
 void AssignPlayerComponentToLocalPlayerNode()
 {
-	CCryAction* pCryAction = CCryAction::GetCryAction();
-	if (!pCryAction)
-	{
-		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: CCryAction is null. Ensure CCryAction is initialized before calling this function.");
-		return;
-	}
-
-
-	EntityId localPlayerId = pCryAction->GetClientEntityId();
-	if (localPlayerId == 0)
-	{
-		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: Local player entity ID is invalid.");
-		return;
-	}
-
-	// Retrieve the local player's entity
+	// Ensure the Entity System is available
 	if (!gEnv || !gEnv->pEntitySystem)
 	{
-		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: gEnv or pEntitySystem is null.");
+		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: Entity system is null.");
 		return;
 	}
 
-	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(localPlayerId);
+	// Dynamically find the entity by name
+	const char* playerEntityName = "Player";
+	IEntity* pEntity = gEnv->pEntitySystem->FindEntityByName(playerEntityName);
 	if (!pEntity)
 	{
-		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: Could not retrieve local player entity.");
+		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: Could not find entity with name '%s'.", playerEntityName);
 		return;
 	}
-
-	// Retrieve the CPlayerComponent from the entity
-	CPlayerComponent* pPlayerComponent = pEntity->GetComponent<CPlayerComponent>();
-	if (!pPlayerComponent)
+	else
 	{
-		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: Could not retrieve CPlayerComponent from entity.");
-		return;
+		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Successfully retrieved entity with name '%s'.", playerEntityName);
+	}
+
+	// Retrieve the entity ID and set it as the local player ID
+	EntityId entityId = pEntity->GetId();
+	IGameFramework* pGameFramework = gEnv->pGameFramework;
+	if (pGameFramework)
+	{
+		if (gEnv->IsEditor())
+		{
+			CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Running in editor mode, skipping client actor assignment.");
+		}
+		else
+		{
+			if(gEnv->pGameFramework)
+			{
+				IEntity* pClientEntity = gEnv->pGameFramework->GetClientEntity();
+				if (pClientEntity && pClientEntity->GetId() != entityId)
+				{
+					CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Warning: Client entity already set to a different entity.");
+				}
+				else
+				{
+					CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Client entity is already set or no action is required.");
+				}
+			}
+	else
+	{
+		CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Failed: Game framework is null.");
+	}
+		}
 	}
 
 	// Log the successful assignment
-	CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Successfully linked CPlayerComponent with entity ID: %d", pPlayerComponent->GetEntityId());
+	CryLogAlways("[AssignPlayerComponentToLocalPlayerNode] Successfully linked Local Player ID with entity name '%s' and ID: %d", playerEntityName, entityId);
 }
+
 
 
 /*
@@ -284,6 +299,7 @@ void CPlayerComponent::OnFootstepEvent(const char* eventName)
 */
 
 
+
 void CPlayerComponent::Initialize()
 {
 	m_pCameraComponent = m_pEntity->GetOrCreateComponent <Cry::DefaultComponents::CCameraComponent>();
@@ -300,6 +316,7 @@ void CPlayerComponent::Initialize()
 	m_pInputComponent = m_pEntity->GetOrCreateComponent <Cry::DefaultComponents::CInputComponent>();
 	m_pCharacterControllerComponent = m_pEntity->GetOrCreateComponent <Cry::DefaultComponents::CCharacterControllerComponent>();
 	m_pAdvancedAnimationComponent = m_pEntity->GetOrCreateComponent <Cry::DefaultComponents::CAdvancedAnimationComponent>();
+
 	//m_pAdvancedAnimationComponent->SetDefaultScopeContextName("FirstPersonCharacter");
 	//m_pAdvancedAnimationComponent->SetMannequinAnimationDatabaseFile("Animations/Mannequin/ADB/FirstPerson.adb");
 	//m_pAdvancedAnimationComponent->SetControllerDefinitionFile("Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml");
@@ -606,102 +623,107 @@ Cry::Entity::EventFlags CPlayerComponent::GetEventMask() const
 		Cry::Entity::EEvent::PhysicalObjectBroken;
 }
 
+
 void CPlayerComponent::ProcessEvent(const SEntityEvent& eventParam)
 {
-	const float footstepInterval = (m_currentPlayerState == EPlayerState::Sprinting) ? 0.3f : 0.5f; // Adjust interval based on speed
+	
+		const float footstepInterval = (m_currentPlayerState == EPlayerState::Sprinting) ? 0.3f : 0.5f; // Adjust interval based on speed
 
-	switch (eventParam.event)
-	{
-	case Cry::Entity::EEvent::GameplayStarted:
-	{
-		CryLogAlways("[CPlayerComponent] GameplayStarted event received.");
-		Reset();
-
-
-	}
-	break;
-
-	case Cry::Entity::EEvent::Update:
-	{
-		const float frametime = eventParam.fParam[0];
-		TryUpdateStance();
-		UpdateMovement();
-		UpdateCamera(frametime);
-		UpdateRotation();
-
-
-		// Call CheckHealth during every update
-		CheckHealth();
-
-		// Track fall height and apply fall damage
-		static Vec3 previousPosition = m_pEntity->GetWorldPos(); // Store the previous position
-		Vec3 currentPosition = m_pEntity->GetWorldPos();         // Get the current position
-
-		//CryLogAlways("[CPlayerComponent] Current Position: X=%f, Y=%f, Z=%f", currentPosition.x, currentPosition.y, currentPosition.z);
-		//CryLogAlways("[CPlayerComponent] Previous Position: X=%f, Y=%f, Z=%f", previousPosition.x, previousPosition.y, previousPosition.z);
-
-		if (currentPosition.z < previousPosition.z)
+		switch (eventParam.event)
 		{
-			float fallHeight = (previousPosition.z - currentPosition.z) * 200.0f; // Convert meters to centimeters
 
-			CryLogAlways("[CPlayerComponent] Fall height detected: %f", fallHeight);
 
-			// If the player lands (e.g., on the ground), apply fall damage
-			if (m_pCharacterControllerComponent && m_pCharacterControllerComponent->IsOnGround())
+		case Cry::Entity::EEvent::GameplayStarted:
+		{
+			CryLogAlways("[CPlayerComponent] GameplayStarted event received.");
+			Reset();
+
+
+		}
+		break;
+
+		case Cry::Entity::EEvent::Update:
+		{
+			const float frametime = eventParam.fParam[0];
+			TryUpdateStance();
+			UpdateMovement();
+			UpdateCamera(frametime);
+			UpdateRotation();
+
+			
+
+			// Call CheckHealth during every update
+			CheckHealth();
+
+			// Track fall height and apply fall damage
+			static Vec3 previousPosition = m_pEntity->GetWorldPos(); // Store the previous position
+			Vec3 currentPosition = m_pEntity->GetWorldPos();         // Get the current position
+
+			//CryLogAlways("[CPlayerComponent] Current Position: X=%f, Y=%f, Z=%f", currentPosition.x, currentPosition.y, currentPosition.z);
+			//CryLogAlways("[CPlayerComponent] Previous Position: X=%f, Y=%f, Z=%f", previousPosition.x, previousPosition.y, previousPosition.z);
+
+			if (currentPosition.z < previousPosition.z)
 			{
-				CryLogAlways("[CPlayerComponent] Player landed on the ground. Applying fall damage.");
-				ApplyFallDamage(fallHeight);
+				float fallHeight = (previousPosition.z - currentPosition.z) * 200.0f; // Convert meters to centimeters
 
-				// Reset previousPosition to avoid repeated fall damage
-				previousPosition = currentPosition;
+				CryLogAlways("[CPlayerComponent] Fall height detected: %f", fallHeight);
+
+				// If the player lands (e.g., on the ground), apply fall damage
+				if (m_pCharacterControllerComponent && m_pCharacterControllerComponent->IsOnGround())
+				{
+					CryLogAlways("[CPlayerComponent] Player landed on the ground. Applying fall damage.");
+					ApplyFallDamage(fallHeight);
+
+					// Reset previousPosition to avoid repeated fall damage
+					previousPosition = currentPosition;
+				}
+				else
+				{
+					CryLogAlways("[CPlayerComponent] Player is not on the ground.");
+				}
 			}
 			else
 			{
-				CryLogAlways("[CPlayerComponent] Player is not on the ground.");
+				// Update previousPosition only when the player is not falling
+				if (m_pCharacterControllerComponent && m_pCharacterControllerComponent->IsOnGround())
+				{
+					previousPosition = currentPosition;
+				}
 			}
-		}
-		else
-		{
-			// Update previousPosition only when the player is not falling
-			if (m_pCharacterControllerComponent && m_pCharacterControllerComponent->IsOnGround())
+
+			// Trigger footstep sounds based on movement
+			if (m_Walk == 1 || m_Run == 1 || m_Left == 1 || m_Right == 1 || m_Back == 1)
 			{
-				previousPosition = currentPosition;
+				m_footstepTimer += frametime;
+				if (m_footstepTimer >= footstepInterval)
+				{
+					OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
+					m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
+					m_footstepTimer = 0.0f; // Reset timer
+				}
 			}
-		}
-
-		// Trigger footstep sounds based on movement
-		if (m_Walk == 1 || m_Run == 1 || m_Left == 1 || m_Right == 1 || m_Back == 1)
-		{
-			m_footstepTimer += frametime;
-			if (m_footstepTimer >= footstepInterval)
+			else
 			{
-				OnFootstepEvent(m_isLeftFootstep ? "left" : "right");
-				m_isLeftFootstep = !m_isLeftFootstep; // Alternate foot
-				m_footstepTimer = 0.0f; // Reset timer
+				m_footstepTimer = 0.0f; // Reset timer if the player stops moving
 			}
 		}
-		else
+		break;
+
+
+		case Cry::Entity::EEvent::PhysicalTypeChanged:
 		{
-			m_footstepTimer = 0.0f; // Reset timer if the player stops moving
+			RecenterCollider();
 		}
-	}
-	break;
+		break;
 
+		case Cry::Entity::EEvent::EditorPropertyChanged:
+		{
+			Reset();
+		}
+		break;
 
-	case Cry::Entity::EEvent::PhysicalTypeChanged:
-	{
-		RecenterCollider();
-	}
-	break;
-
-	case Cry::Entity::EEvent::EditorPropertyChanged:
-	{
-		Reset();
-	}
-	break;
-
-	break;
-	}
+		break;
+		}
 }
 
 // Actor:LocalPlayer

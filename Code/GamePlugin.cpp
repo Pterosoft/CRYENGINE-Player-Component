@@ -66,7 +66,7 @@ void CGamePlugin::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lp
 					stl::make_unique<Schematyc::CEnvPackage>(
 						CGamePlugin::GetCID(),
 						"EntityComponents",
-						"Crytek GmbH",
+						"Pterosoft studio",
 						"Components",
 						staticAutoRegisterLambda
 						)
